@@ -64,10 +64,16 @@
 <script setup>
 import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { login as apiLogin } from '../services/usuarios';
+import { useAuth } from '../store/auth';
 
 const router = useRouter();
-const form = reactive({ email: '', password: '' });
+const auth = useAuth();
+
+const form = reactive({
+  email: '',
+  password: ''
+});
+
 const loading = ref(false);
 const error = ref(null);
 
@@ -75,14 +81,13 @@ async function onSubmit() {
   loading.value = true;
   error.value = null;
   try {
-    const { data } = await apiLogin({ email: form.email, password: form.password });
-    // Asume que data.token y data.user llegan aquí
-    // Guarda token en localStorage o store, p.ej.:
-    localStorage.setItem('token', data.token);
-    // Redirige al home o a donde sea:
+    await auth.login({
+      email: form.email,
+      password: form.password
+    });
     router.push('/');
   } catch (err) {
-    error.value = err.response?.data?.error || 'Error al iniciar sesión';
+    error.value = err.response?.data?.error || err.message || 'Error al iniciar sesión';
   } finally {
     loading.value = false;
   }

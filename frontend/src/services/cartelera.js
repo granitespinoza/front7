@@ -1,3 +1,5 @@
+// src/services/cartelera.js
 import api from './api';
+
 export const listarPeliculas = () => api.get('/cartelera');
-export const obtenerPelicula   = id => api.get(`/cartelera/${id}`);
+export const obtenerPelicula = id => api.get(`/cartelera/${id}`);
