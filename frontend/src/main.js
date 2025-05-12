@@ -1,9 +1,25 @@
+// src/main.js
+//import './styles/style.css';
+
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
-import { worker } from './mocks/browser';
 import './styles/style.css';
 
-if (import.meta.env.DEV) worker.start();
 
-createApp(App).use(router).mount('#app');
+
+
+function bootstrap() {
+  const app = createApp(App);
+  app.use(router);
+  app.mount('#app');
+}
+
+if (import.meta.env.DEV) {
+  import('./mocks/browser')
+    .then(({ worker }) => worker.start({ onUnhandledRequest: 'bypass' }))
+    .then(bootstrap)
+    .catch(() => bootstrap());
+} else {
+  bootstrap();
+}

@@ -1,68 +1,93 @@
 <template>
-  <section class="p-6 max-w-md mx-auto">
-    <router-link to="/" class="text-blue-500 mb-4 inline-block">← Volver</router-link>
+  <section
+    style="padding:2rem; max-width:400px; margin:0 auto; background:#121212; color:#fff; min-height:100vh;"
+  >
+    <button @click="router.back()" 
+            style="background:none; border:none; color:#61dafb; cursor:pointer; margin-bottom:1rem;">
+      ← Volver
+    </button>
 
-    <h1 class="text-2xl font-bold mb-4">Confirmar reserva</h1>
-
-    <div v-if="!user" class="text-red-500 mb-4">
-      Debes iniciar sesión para reservar.
+    <!-- 1) Usuario no autenticado -->
+    <div v-if="!auth.isAuthenticated" style="text-align:center;">
+      <p style="color:tomato; margin-bottom:1rem;">
+        ❌ Debes iniciar sesión para reservar.
+      </p>
+      <router-link to="/login"
+                   style="padding:0.5rem 1rem; background:#61dafb; color:#000; border-radius:4px; text-decoration:none;">
+        Ir a Login
+      </router-link>
     </div>
 
-    <form v-else @submit.prevent="handleReserva" class="space-y-4">
-      <label class="block">
-        Cantidad de butacas
-        <input v-model.number="butacas" type="number" min="1" class="input w-full" required />
+    <!-- 2) Formulario de reserva -->
+    <div v-else>
+      <h2 style="margin-bottom:1rem;">
+        Reservar entradas para: {{ pelicula.titulo }}
+      </h2>
+
+      <label>
+        Cantidad de boletos:
+        <input v-model.number="cantidad" type="number" min="1" style="width:100%; padding:0.5rem; margin:0.5rem 0;" />
       </label>
 
-      <button class="btn bg-green-600 text-white w-full" :disabled="loading">
-        <span v-if="loading">Reservando…</span>
-        <span v-else>Reservar</span>
+      <button @click="confirmar" 
+              :disabled="submitting"
+              style="padding:0.6rem 1.2rem; background:#61dafb; color:#000; border:none; border-radius:4px; cursor:pointer;">
+        {{ submitting ? 'Enviando…' : 'Confirmar reserva' }}
       </button>
 
-      <p v-if="error" class="text-red-500">{{ error }}</p>
-      <p v-if="success" class="text-green-600">{{ success }}</p>
-    </form>
+      <p v-if="message" :style="{ color: messageError ? 'tomato' : 'lightgreen', marginTop: '1rem' }">
+        {{ message }}
+      </p>
+    </div>
   </section>
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { ref, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { useAuth } from '../store/auth';
+import { obtenerPelicula } from '../services/cartelera';
 import { crearReserva } from '../services/reservas';
 
-const route   = useRoute();
-const { state: auth } = useAuth();
+const route  = useRoute();
+const router = useRouter();
+const auth   = useAuth();
 
-const user     = auth.user;
-const peliculaId = Number(route.params.id);
+const pelicula  = ref({});
+const cantidad  = ref(1);
+const submitting= ref(false);
+const message   = ref('');
+const messageError = ref(false);
 
-const butacas  = ref(1);
-const loading  = ref(false);
-const error    = ref('');
-const success  = ref('');
+// 1) Cargar detalle de la película (para mostrar el título)
+onMounted(async () => {
+  try {
+    const res = await obtenerPelicula(route.params.id);
+    pelicula.value = res.data;
+  } catch {
+    // ignoramos, ya lo viste en MovieView
+  }
+});
 
-async function handleReserva() {
-  loading.value = true;
-  error.value   = '';
-  success.value = '';
+// 2) Función que envía la reserva
+async function confirmar() {
+  message.value = '';
+  messageError.value = false;
+  submitting.value = true;
 
   try {
-    await crearReserva({
-      user_id: user.id,
-      funcion_id: peliculaId,
-      cantidad_boletos: butacas.value // ejemplo de precio fijo
-    });
-    success.value = '¡Reserva creada con éxito!';
+    const payload = {
+      user_id: auth.user.id,
+      funcion_id: pelicula.value.id,
+      cantidad_boletos: cantidad.value
+    };
+    await crearReserva(payload);
+    message.value = '✅ Reserva creada con éxito';
   } catch (err) {
-    error.value = err.response?.data?.error || 'Error al crear la reserva';
+    messageError.value = true;
+    message.value = '❌ Error creando reserva';
   } finally {
-    loading.value = false;
+    submitting.value = false;
   }
 }
 </script>
-
-<style scoped>
-.input { @apply border p-2 rounded; }
-.btn   { @apply py-2 rounded; }
-</style>

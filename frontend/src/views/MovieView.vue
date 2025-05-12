@@ -1,52 +1,74 @@
+<!-- src/views/MovieView.vue -->
 <template>
-  <section class="p-6 max-w-3xl mx-auto">
-    <router-link to="/" class="text-blue-500 mb-4 inline-block">← Volver</router-link>
+  <section
+    style="padding:1rem; max-width:600px; margin:0 auto; background:#121212; color:#fff; min-height:100vh;"
+  >
+    <button
+      @click="router.back()"
+      style="margin-bottom:1rem; background:none; border:none; color:#61dafb; cursor:pointer;"
+    >
+      ← Volver
+    </button>
 
-    <div v-if="loading">Cargando…</div>
-    <div v-else-if="error" class="text-red-500">{{ error }}</div>
-
-    <article v-else class="flex flex-col md:flex-row gap-6">
-      <img
-        v-if="pelicula.posterUrl"
-        :src="pelicula.posterUrl"
-        :alt="pelicula.titulo"
-        class="w-full md:w-64 rounded shadow"
-      />
-
-      <div>
-        <h1 class="text-2xl font-bold mb-2">{{ pelicula.titulo }}</h1>
-        <p class="mb-4">{{ pelicula.descripcion }}</p>
-        <p class="text-gray-500 mb-6">Año: {{ pelicula.año }}</p>
-
-        <router-link
-          :to="`/reserva/${pelicula.id}`"
-          class="bg-green-600 text-white px-4 py-2 rounded"
-        >
-          Reservar entradas
-        </router-link>
-      </div>
-    </article>
+    <div v-if="loading" style="font-size:1.2rem;">🔄 Cargando detalle…</div>
+    <div v-else-if="error" style="color:tomato; font-size:1.2rem;">
+      ❌ {{ error }}
+    </div>
+    <div v-else>
+      <h1 style="font-size:2rem; margin-bottom:0.5rem;">🎬 {{ pelicula.titulo }}</h1>
+      <p style="margin-bottom:0.5rem;">
+        <strong>Duración:</strong> {{ pelicula.duracion }} min
+      </p>
+      <p style="margin-bottom:1rem;">{{ pelicula.descripcion }}</p>
+      <button
+        @click="irAReserva"
+        style="
+          padding:0.6rem 1.2rem;
+          background:#61dafb;
+          color:#000;
+          border:none;
+          border-radius:4px;
+          cursor:pointer;
+          font-size:1rem;
+        "
+      >
+        Reservar entradas
+      </button>
+    </div>
   </section>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { obtenerPelicula } from '../services/cartelera';
 
-const route      = useRoute();
-const pelicula   = ref({});
-const loading    = ref(true);
-const error      = ref(null);
+const route = useRoute();
+const router = useRouter();
 
-onMounted(async () => {
+const pelicula = ref({});
+const loading  = ref(true);
+const error    = ref(null);
+
+async function fetchDetalle() {
   try {
-    const { data } = await obtenerPelicula(route.params.id);
-    pelicula.value = data;
+    const res = await obtenerPelicula(route.params.id);
+    // Si mock devuelve strings, conviértelo así:
+    res.data.id = Number(res.data.id);
+    pelicula.value = res.data;
   } catch (err) {
-    error.value = err.response?.data?.error || 'Error al cargar la película';
+    error.value =
+      err.response?.data?.detail ||
+      `${err.response?.status} ${err.response?.statusText}` ||
+      err.message;
   } finally {
     loading.value = false;
   }
-});
+}
+
+function irAReserva() {
+  router.push(`/reserva/${pelicula.value.id}`);
+}
+
+onMounted(fetchDetalle);
 </script>

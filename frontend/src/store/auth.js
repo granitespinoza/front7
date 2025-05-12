@@ -1,43 +1,42 @@
-import { reactive, readonly } from 'vue';
-import { login as apiLogin, register as apiRegister, getCurrentUser } from '../services/usuarios';
-
-const state = reactive({ user: null, loading: false, error: null });
-
-async function initAuth() {
-  state.loading = true;
-  try { const { data } = await getCurrentUser(); state.user = data; }
-  catch { state.user = null; }
-  finally { state.loading = false; }
-}
-
-async function login(credentials) {
-  state.loading = true;
-  try {
-    const { data } = await apiLogin(credentials);
-    state.user = data.user;
-  } catch (e) {
-    state.error = e.response?.data?.error;
-  } finally {
-    state.loading = false;
-  }
-}
-
-async function register(payload) {
-  state.loading = true;
-  try {
-    const { data } = await apiRegister(payload);
-    state.user = data;
-  } catch (e) {
-    state.error = e.response?.data?.error;
-  } finally {
-    state.loading = false;
-  }
-}
-
-function logout() {
-  state.user = null;
-}
+// src/store/auth.js
+import { reactive } from 'vue';
+import { login as apiLogin, obtenerUsuarioActual } from '../services/usuarios';
 
 export function useAuth() {
-  return { state: readonly(state), initAuth, login, register, logout };
+  const state = reactive({
+    user: null,
+    token: localStorage.getItem('token') || null,
+    isAuthenticated: !!localStorage.getItem('token')
+  });
+
+  async function initAuth() {
+    try {
+      const user = await obtenerUsuarioActual();
+      state.user = user;
+      state.isAuthenticated = true;
+    } catch {
+      state.user = null;
+      state.isAuthenticated = false;
+    }
+  }
+
+  async function login(credentials) {
+    const { token, user } = await apiLogin(credentials);
+    state.user = user;
+    state.token = token;
+    state.isAuthenticated = true;
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(user));
+    return user;
+  }
+
+  async function logout() {
+    state.user = null;
+    state.token = null;
+    state.isAuthenticated = false;
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  }
+
+  return { ...state, initAuth, login, logout };
 }

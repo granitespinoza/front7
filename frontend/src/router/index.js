@@ -1,22 +1,54 @@
+// src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router';
 
-const HomeView      = () => import('../views/HomeView.vue');
-const MovieView     = () => import('../views/MovieView.vue');
-const LoginView     = () => import('../views/LoginView.vue');
-const RegisterView  = () => import('../views/RegisterView.vue');
-const ReservaView   = () => import('../views/ReservaView.vue');
-const MisReservas   = () => import('../views/MisReservas.vue');
+import HomeView    from '../views/HomeView.vue';
+import MovieView   from '../views/MovieView.vue';
+import LoginView   from '../views/LoginView.vue';
+import RegisterView from '../views/RegisterView.vue';
+import ReservaView from '../views/ReservaView.vue';
+import MisReservas from '../views/MisReservas.vue';
 
 const routes = [
-  { path: '/',             component: HomeView },
-  { path: '/pelicula/:id', component: MovieView,      props: true },
-  { path: '/login',        component: LoginView },
-  { path: '/register',     component: RegisterView },
-  { path: '/reserva/:id',  component: ReservaView,    props: true },
-  { path: '/mis-reservas', component: MisReservas },
+  {
+    path: '/',
+    name: 'Home',
+    component: HomeView
+  },
+  {
+    path: '/pelicula/:id',
+    name: 'Movie',
+    component: MovieView,
+    props: true
+  },
+  {
+    path: '/login',
+    name: 'Login',
+    component: LoginView
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: RegisterView
+  },
+  {
+    path: '/reserva/:id',
+    name: 'Reserva',
+    component: ReservaView,
+    props: true
+  },
+  {
+    path: '/mis-reservas',
+    name: 'MisReservas',
+    component: MisReservas
+  },
+  // Este catch-all redirige cualquier ruta desconocida al Home
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/'
+  }
 ];
 
 export default createRouter({
   history: createWebHistory(),
-  routes,
+  routes
 });
