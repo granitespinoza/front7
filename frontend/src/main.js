@@ -1,4 +1,4 @@
-// src/main.js
+// src/main.js ultimo
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
